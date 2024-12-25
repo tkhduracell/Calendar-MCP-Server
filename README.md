@@ -2,6 +2,7 @@
 
 A Model Context Protocol (MCP) server for Google Calendar integration in Cursor IDE. This server enables AI assistants to manage Google Calendar events through natural language interactions.
 
+[![smithery badge](https://smithery.ai/badge/@gongrzhe/server-calendar-mcp)](https://smithery.ai/server/@gongrzhe/server-calendar-mcp)
 [![npm version](https://badge.fury.io/js/%40gongrzhe%2Fserver-calendar-mcp.svg)](https://www.npmjs.com/package/@gongrzhe/server-calendar-mcp)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
@@ -17,6 +18,15 @@ A Model Context Protocol (MCP) server for Google Calendar integration in Cursor 
 
 ## Installation
 
+### Installing via Smithery
+
+To install Google Calendar Integration for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@gongrzhe/server-calendar-mcp):
+
+```bash
+npx -y @smithery/cli install @gongrzhe/server-calendar-mcp --client claude
+```
+
+### Manual Installation
 ```bash
 npm install @gongrzhe/server-calendar-mcp
 ```
