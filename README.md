@@ -1,6 +1,6 @@
 # Calendar MCP Server
 
-A Model Context Protocol (MCP) server for Google Calendar integration in Cursor IDE. This server enables AI assistants to manage Google Calendar events through natural language interactions.
+A Model Context Protocol (MCP) server for Google Calendar integration in Claude Desktop. This server enables AI assistants to manage Google Calendar events through natural language interactions.
 
 [![npm version](https://badge.fury.io/js/%40gongrzhe%2Fserver-calendar-mcp.svg)](https://www.npmjs.com/package/@gongrzhe/server-calendar-mcp)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
@@ -67,7 +67,7 @@ npm install @gongrzhe/server-calendar-mcp
 
 ## Usage Examples
 
-The server provides several tools that can be used through the Cursor IDE:
+The server provides several tools that can be used through the Claude Desktop:
 
 ### Create Event
 ```json
