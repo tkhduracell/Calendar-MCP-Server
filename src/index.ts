@@ -36,10 +36,10 @@ oauth2Client.setCredentials({
 
 // Initialize Google Calendar API
 const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-const calendarId = 'primary';
 
 // Schema definitions
 const CreateEventSchema = z.object({
+    calendarId: z.string().describe("Calendar ID"),
     summary: z.string().describe("Event title"),
     start: z.object({
         dateTime: z.string().describe("Start time (ISO format)"),
@@ -83,6 +83,11 @@ const ListEventsSchema = z.object({
     orderBy: z.enum(['startTime', 'updated']).optional().describe("Sort order"),
 });
 
+const ListCalendarsSchema = z.object({
+    minAccessRole: z.enum(["writer", "owner"]).optional()
+});
+
+
 // Server implementation
 const server = new Server({
     name: "google-calendar",
@@ -97,7 +102,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
         {
             name: "create_event",
-            description: "Creates a new event in Google Calendar",
+            description: "Creates a new event in Google Calendar, prompt user for Calendar first (List calendars with minAccessRole: writer)",
             inputSchema: zodToJsonSchema(CreateEventSchema),
         },
         {
@@ -120,6 +125,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             description: "Lists events within a specified time range",
             inputSchema: zodToJsonSchema(ListEventsSchema),
         },
+        {
+            name: "list_calendars",
+            description: "Lists calendars",
+            inputSchema: zodToJsonSchema(ListCalendarsSchema),
+        },
     ],
 }));
 
@@ -131,7 +141,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             case "create_event": {
                 const validatedArgs = CreateEventSchema.parse(args);
                 const response = await calendar.events.insert({
-                    calendarId,
+                    calendarId: validatedArgs.calendarId,
                     requestBody: validatedArgs,
                 });
                 return {
@@ -150,7 +160,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             case "get_event": {
                 const validatedArgs = GetEventSchema.parse(args);
                 const response = await calendar.events.get({
-                    calendarId,
                     eventId: validatedArgs.eventId,
                 });
                 return {
@@ -167,7 +176,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const validatedArgs = UpdateEventSchema.parse(args);
                 const { eventId, ...updates } = validatedArgs;
                 const response = await calendar.events.patch({
-                    calendarId,
                     eventId,
                     requestBody: updates,
                 });
@@ -187,7 +195,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             case "delete_event": {
                 const validatedArgs = DeleteEventSchema.parse(args);
                 await calendar.events.delete({
-                    calendarId,
                     eventId: validatedArgs.eventId,
                 });
                 return {
@@ -200,10 +207,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 };
             }
 
+            case "list_calendars": {
+                const validatedArgs = ListCalendarsSchema.parse(args);
+                
+                const response = await calendar.calendarList.list({
+                    minAccessRole: validatedArgs.minAccessRole
+                });
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: `Found ${response.data.items?.length || 0} calendars:\n` +
+                                  JSON.stringify(response.data.items, null, 2),
+                        },
+                    ],
+                };
+            }
+
             case "list_events": {
                 const validatedArgs = ListEventsSchema.parse(args);
+                
                 const response = await calendar.events.list({
-                    calendarId,
                     timeMin: validatedArgs.timeMin,
                     timeMax: validatedArgs.timeMax,
                     maxResults: validatedArgs.maxResults || 10,

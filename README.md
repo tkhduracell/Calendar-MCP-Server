@@ -2,8 +2,7 @@
 
 A Model Context Protocol (MCP) server for Google Calendar integration in Claude Desktop. This server enables AI assistants to manage Google Calendar events through natural language interactions.
 
-[![smithery badge](https://smithery.ai/badge/@gongrzhe/server-calendar-mcp)](https://smithery.ai/server/@gongrzhe/server-calendar-mcp)
-[![npm version](https://badge.fury.io/js/%40gongrzhe%2Fserver-calendar-mcp.svg)](https://www.npmjs.com/package/@gongrzhe/server-calendar-mcp)
+[![npm version](https://badge.fury.io/js/%40tkhduracell%2Fserver-calendar-mcp.svg)](https://www.npmjs.com/package/tkhduracell/server-calendar-mcp)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
 ## Features
@@ -18,54 +17,70 @@ A Model Context Protocol (MCP) server for Google Calendar integration in Claude 
 
 ## Installation
 
-### Installing via Smithery
-
-To install Google Calendar Integration for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@gongrzhe/server-calendar-mcp):
-
 ```bash
-npx -y @smithery/cli install @gongrzhe/server-calendar-mcp --client claude
-```
-
-### Manual Installation
-```bash
-npm install @gongrzhe/server-calendar-mcp
+git clone https://github.com/tkhduracell/Calendar-MCP-Server.git
+npm install
 ```
 
 ## Setup
 
-1. Create a Google Cloud Project and obtain credentials:
+### Setup project 
+1. Enable gcloud CLI
+    ```bash
+    gcloud projects create YOUR_PROJECT_ID --name="Your Project Name"
+    # or 
+    gcloud config set project YOUR_PROJECT_ID
+    ```
+2. Enable the API
+   ```bash
+   gcloud services enable calendar-json.googleapis.com
+   ```
 
-   a. Create a Google Cloud Project:
-      - Go to [Google Cloud Console](https://console.cloud.google.com/)
-      - Create a new project or select an existing one
-      - Enable the Google Calendar API for your project
+### Setup OAuth 2.0 credentials
+1. Go to the Google Cloud Console.
+1. Ensure your desired project is selected.
+1. Navigate to `APIs & Services` > `Credentials`.
+1. Click `Create Credentials` > `OAuth client ID`.
+1. Select the appropriate application type (e.g., `Web application` if you intend to use the OAuth Playground as the redirect URI).
+1. Give it a name (e.g., `Goose Calendar Access`).
+1. Under `Authorized redirect URIs`, click `ADD URI` and enter https://developers.google.com/oauthplayground.
+1. Click `Create`.
+1. Copy the displayed Client ID and Client Secret. This is your `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. These are needed for the OAuth Playground step.
 
-   b. Create OAuth 2.0 Credentials:
-      - Go to "APIs & Services" > "Credentials"
-      - Click "Create Credentials" > "OAuth client ID"
-      - Choose "Desktop app" as application type
-      - Give it a name and click "Create"
-      - You will get your `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
+### Get Refresh Token:
+1. ```bash
+    export GOOGLE_CLIENT_ID="YOUR_CLIENT_ID"
+    export GOOGLE_CLIENT_SECRET="YOUR_CLIENT_SECRET"
+    export GOOGLE_REDIRECT_URI="https://developers.google.com/oauthplayground"
+    export GOOGLE_SCOPE="https://www.googleapis.com/auth/calendar"
+    ```
+1. ```bash
+    open "https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${GOOGLE_REDIRECT_URI}&scope=${GOOGLE_SCOPE}&response_type=code&access_type=offline&prompt=consent"
+    ```
+1. Copy the code and run 
+   ```bash 
+   export AUTH_CODE="PASTE_CODE_HERE"`
+   ```
+1. Get refesh token
+   ```bash
+    curl -s https://oauth2.googleapis.com/token \
+      -X POST \
+      -H "Content-Type: application/x-www-form-urlencoded" \
+      -d "code=${AUTH_CODE}" \
+      -d "client_id=${GOOGLE_CLIENT_ID}" \
+      -d "client_secret=${GOOGLE_CLIENT_SECRET}" \
+      -d "redirect_uri=${GOOGLE_REDIRECT_URI}" \
+      -d "grant_type=authorization_code" | jq -r '.refresh_token'
+    ```
+1. Copy the "Refresh token" - this is your `GOOGLE_REFRESH_TOKEN`
 
-   c. Get Refresh Token:
-      - Go to [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
-      - Click the gear icon (Settings) in the top right
-      - Check "Use your own OAuth credentials"
-      - Enter your OAuth Client ID and Client Secret
-      - In the left panel, find "Calendar API v3" and select "https://www.googleapis.com/auth/calendar"
-      - Click "Authorize APIs" and complete the OAuth flow
-      - Click "Exchange authorization code for tokens"
-      - Copy the "Refresh token" - this is your `GOOGLE_REFRESH_TOKEN`
-
-2. Configure in Claude Desktop:
+2. Configure the MCP toole:
 
 ```json
 {
   "calendar": {
     "command": "npx",
-    "args": [
-      "@gongrzhe/server-calendar-mcp"
-    ],
+    "args": ["tkhduracell/server-calendar-mcp"],
     "env": {
       "GOOGLE_CLIENT_ID": "your_client_id_here",
       "GOOGLE_CLIENT_SECRET": "your_client_secret_here",
@@ -91,6 +106,13 @@ The server provides several tools that can be used through the Claude Desktop:
   },
   "description": "Weekly team sync",
   "location": "Conference Room A"
+}
+```
+
+### List Calendars
+```json
+{
+  "minAccessRole": "writer"
 }
 ```
 
