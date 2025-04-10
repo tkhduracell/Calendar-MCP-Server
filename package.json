@@ -1,5 +1,5 @@
 {
-  "name": "@gongrzhe/server-calendar-mcp",
+  "name": "@tkhduracell/server-calendar-mcp",
   "version": "1.0.0",
   "description": "A Model Context Protocol server for Google Calendar integration",
   "main": "build/index.js",
@@ -8,8 +8,9 @@
     "calendar-mcp": "./build/index.js"
   },
   "scripts": {
-    "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "build": "tsc && chmod 755 build/index.js",
+    "prepublishOnly": "npm run build",
+    "start": "node build/index.js"
   },
   "files": [
     "build",
@@ -25,11 +26,11 @@
     "claude",
     "cursor"
   ],
-  "author": "gongrzhe",
+  "author": "tkhduracell",
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/Calendar-MCP-Server"
+    "url": "https://github.com/tkhduracell/Calendar-MCP-Server"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
@@ -42,6 +43,6 @@
     "zod-to-json-schema": "^3.22.4"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=20.0.0"
   }
 }

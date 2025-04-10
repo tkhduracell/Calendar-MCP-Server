@@ -7,7 +7,7 @@ import {
     ListToolsRequestSchema,
     Tool,
 } from "@modelcontextprotocol/sdk/types.js";
-import { google } from 'googleapis';
+import { calendar_v3, google } from 'googleapis';
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { OAuth2Client } from 'google-auth-library';
@@ -77,6 +77,7 @@ const DeleteEventSchema = z.object({
 });
 
 const ListEventsSchema = z.object({
+    calendarId: z.string().optional().describe("Calendar ID"),
     timeMin: z.string().describe("Start of time range (ISO format)"),
     timeMax: z.string().describe("End of time range (ISO format)"),
     maxResults: z.number().optional().describe("Maximum number of events to return"),
@@ -149,9 +150,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         {
                             type: "text",
                             text: `Event created with ID: ${response.data.id}\n` +
-                                  `Title: ${validatedArgs.summary}\n` +
-                                  `Start: ${validatedArgs.start.dateTime}\n` +
-                                  `End: ${validatedArgs.end.dateTime}`,
+                                `Title: ${validatedArgs.summary}\n` +
+                                `Start: ${validatedArgs.start.dateTime}\n` +
+                                `End: ${validatedArgs.end.dateTime}`,
                         },
                     ],
                 };
@@ -184,9 +185,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         {
                             type: "text",
                             text: `Event updated: ${eventId}\n` +
-                                  `New title: ${updates.summary || '(unchanged)'}\n` +
-                                  `New start: ${updates.start?.dateTime || '(unchanged)'}\n` +
-                                  `New end: ${updates.end?.dateTime || '(unchanged)'}`,
+                                `New title: ${updates.summary || '(unchanged)'}\n` +
+                                `New start: ${updates.start?.dateTime || '(unchanged)'}\n` +
+                                `New end: ${updates.end?.dateTime || '(unchanged)'}`,
                         },
                     ],
                 };
@@ -209,7 +210,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
             case "list_calendars": {
                 const validatedArgs = ListCalendarsSchema.parse(args);
-                
+
                 const response = await calendar.calendarList.list({
                     minAccessRole: validatedArgs.minAccessRole
                 });
@@ -218,7 +219,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         {
                             type: "text",
                             text: `Found ${response.data.items?.length || 0} calendars:\n` +
-                                  JSON.stringify(response.data.items, null, 2),
+                                JSON.stringify(response.data.items, null, 2),
                         },
                     ],
                 };
@@ -226,20 +227,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
             case "list_events": {
                 const validatedArgs = ListEventsSchema.parse(args);
-                
-                const response = await calendar.events.list({
-                    timeMin: validatedArgs.timeMin,
-                    timeMax: validatedArgs.timeMax,
-                    maxResults: validatedArgs.maxResults || 10,
-                    orderBy: validatedArgs.orderBy || 'startTime',
-                    singleEvents: true,
-                });
+
+                let calendarItems: { id: string }[] = [];
+                if (!validatedArgs.calendarId) {
+                    const calendars = await calendar.calendarList.list({});
+                    calendarItems = calendars.data.items?.map(({ id }) => ({ id: id! })) ?? [];
+                } else {
+                    calendarItems = [{ id: validatedArgs.calendarId }];
+                }
+
+                const all = await Promise.all(calendarItems.map(
+                    ({ id }) => calendar.events.list({
+                        calendarId: id!,
+                        timeMin: validatedArgs.timeMin,
+                        timeMax: validatedArgs.timeMax,
+                        maxResults: validatedArgs.maxResults || 100,
+                        orderBy: validatedArgs.orderBy || 'startTime',
+                        singleEvents: true,
+                    }).then((response) => response.data.items)
+                ) ?? [])
+
+                const events: (calendar_v3.Schema$Event | undefined)[] = all.flat()
                 return {
                     content: [
                         {
                             type: "text",
-                            text: `Found ${response.data.items?.length || 0} events:\n` +
-                                  JSON.stringify(response.data.items, null, 2),
+                            text: `Found ${events?.length || 0} events:\n` +
+                                JSON.stringify(events, null, 2),
                         },
                     ],
                 };
